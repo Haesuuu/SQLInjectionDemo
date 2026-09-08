@@ -1,0 +1,203 @@
+﻿@page
+@using Microsoft.EntityFrameworkCore
+@using SQLInjectionDemo.Data
+@inject AppDbContext _context
+
+@{
+    ViewData["Title"] = "Parameterized - Login";
+    Layout = "~/Pages/Shared/_LoginLayout.cshtml";
+}
+
+
+<style>
+    .demo-navbar {
+        background-color: #ffffff;
+        border-bottom: 1px solid #dddddd;
+        padding: 16px 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .navbar-brand {
+        font-size: 19px;
+        font-weight: bold;
+        color: #333333;
+    }
+
+    .navbar-links {
+        display: flex;
+        gap: 25px;
+    }
+
+        .navbar-links a {
+            text-decoration: none;
+            color: #555555;
+            font-size: 14px;
+        }
+
+            .navbar-links a:hover {
+                color: #222222;
+            }
+
+    @@media (max-width: 700px) {
+        .demo-navbar {
+            padding: 15px 20px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .navbar-links {
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+</style>
+
+
+@functions {
+    [Microsoft.AspNetCore.Mvc.BindProperty]
+    public string UserName { get; set; } = string.Empty;
+
+    [Microsoft.AspNetCore.Mvc.BindProperty]
+    public string Password { get; set; } = string.Empty;
+
+    public IActionResult OnPostLogin()
+    {
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        try
+        {
+            var users = _context.Users
+                .FromSqlInterpolated($@"
+                    SELECT *
+                    FROM Users
+                    WHERE (UserName = {UserName} OR EmailAdd = {UserName})
+                    AND Password = {Password}")
+                .ToList();
+
+            var user = users.FirstOrDefault();
+
+            if (user == null)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Invalid login credentials.");
+
+                return Page();
+            }
+
+            if (user.RoleID == 1)
+            {
+                return RedirectToPage("/Admin/Admin");
+            }
+
+            if (user.RoleID == 2)
+            {
+                return RedirectToPage("/Home/User");
+            }
+
+            ModelState.AddModelError(
+                string.Empty,
+                "Account has an invalid role.");
+
+            return Page();
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                $"An error occurred while logging in: {ex.Message}");
+
+            return Page();
+        }
+    }
+}
+
+<nav class="demo-navbar">
+    <div class="navbar-brand">
+        JISSA SQL Demo
+    </div>
+
+    <div class="navbar-links">
+        <a href="/Account/Login">Unparameterized Login</a>
+        <a href="/Account/ParameterizedLogin">Parameterized Login</a>
+    </div>
+
+</nav>
+
+<div class="login-container">
+
+    
+
+    <div class="login-image-section">
+        <img src="~/Images/jissa.jpg"
+             alt="JISSA"
+             class="login-image" />
+    </div>
+
+    <div class="login-form-section">
+
+        <div class="login-form-wrapper">
+
+            <div class="login-logo">
+                <div class="login-logo-text">PARAMETERIZED</div>
+                <div class="login-logo-sub">QUERY</div>
+            </div>
+
+            <h2 class="login-title">Welcome</h2>
+            <p class="login-subtitle">Use Valid credentials</p>
+
+            @if (!ModelState.IsValid && ModelState.ErrorCount > 0)
+            {
+                <div class="alert-login alert-error">
+                    @Html.ValidationSummary(false)
+                </div>
+            }
+
+            <form method="post"
+                  asp-page-handler="Login"
+                  class="login-form">
+
+                @Html.AntiForgeryToken()
+
+                <div class="form-group-login">
+                    <label class="form-label-login">
+                        Username or Email
+                    </label>
+
+                    <input type="text"
+                           class="form-input-login"
+                           name="UserName"
+                           placeholder="Enter your username or email"
+                           required />
+                </div>
+
+                <div class="form-group-login">
+                    <label class="form-label-login">
+                        Password
+                    </label>
+
+                    <input type="password"
+                           class="form-input-login"
+                           name="Password"
+                           placeholder="Enter your password"
+                           required />
+                </div>
+
+                <button type="submit" class="btn-login">
+                    Sign In
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
