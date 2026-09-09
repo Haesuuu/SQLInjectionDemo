@@ -1,0 +1,134 @@
+@page
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
+@using SQLInjectionDemo.Data
+@using SQLInjectionDemo.Models
+@inject AppDbContext _context
+@{
+    ViewData["Title"] = "Create Account";
+    Layout = "~/Pages/Shared/_LoginLayout.cshtml";
+}
+
+@functions {
+    [BindProperty]
+    [Required, StringLength(100, MinimumLength = 3)]
+    public string UserName { get; set; } = string.Empty;
+
+    [BindProperty]
+    [Required, EmailAddress, StringLength(150)]
+    public string Email { get; set; } = string.Empty;
+
+    [BindProperty]
+    [Required, StringLength(255, MinimumLength = 4)]
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
+
+    public void OnGet()
+    {
+        HttpContext.Session.Remove("DemoUserId");
+    }
+
+    public IActionResult OnPostCreate()
+    {
+        if (!ModelState.IsValid)
+        {
+            return Page();
+        }
+
+        var normalizedUserName = UserName.Trim();
+        var normalizedEmail = Email.Trim();
+
+        var alreadyExists = _context.Users.Any(user =>
+            user.UserName == normalizedUserName || user.EmailAdd == normalizedEmail);
+
+        if (alreadyExists)
+        {
+            ModelState.AddModelError(string.Empty, "That username or email is already registered.");
+            return Page();
+        }
+
+        var memberRole = _context.Roles
+            .AsNoTracking()
+            .FirstOrDefault(role =>
+                role.RoleName == "Member" ||
+                role.RoleName == "User" ||
+                role.RoleID == 2);
+
+        if (memberRole is null)
+        {
+            ModelState.AddModelError(string.Empty, "The Member role is not configured in the database.");
+            return Page();
+        }
+
+        // Plain-text passwords are retained only because this is a local security demonstration.
+        var user = new User
+        {
+            RoleID = memberRole.RoleID,
+            UserName = normalizedUserName,
+            EmailAdd = normalizedEmail,
+            Password = Password
+        };
+
+        _context.Users.Add(user);
+        _context.SaveChanges();
+
+        HttpContext.Session.SetInt32("DemoUserId", user.UserID);
+        return RedirectToPage("/Home/User");
+    }
+}
+
+<nav class="demo-navbar">
+    <a class="navbar-brand" href="/Account/ParameterizedLogin">JISSA <span>SQL Demo</span></a>
+    <div class="navbar-links">
+        <a href="/Account/Login">Vulnerable login</a>
+        <a href="/Account/ParameterizedLogin">Safe login</a>
+    </div>
+</nav>
+
+<div class="login-container">
+    <div class="login-image-section">
+        <img src="~/Images/jissa.jpg" alt="JISSA" class="login-image" />
+    </div>
+
+    <div class="login-form-section">
+        <div class="login-form-wrapper">
+            <div class="login-logo">
+                <div class="login-logo-text">JISSA</div>
+                <div class="login-logo-sub">CREATE ACCOUNT</div>
+            </div>
+
+            <h2 class="login-title">Join the system</h2>
+            <p class="login-subtitle">Create a new member account</p>
+
+            @if (!ModelState.IsValid && ModelState.ErrorCount > 0)
+            {
+                <div class="alert-login alert-error">
+                    @Html.ValidationSummary(false)
+                </div>
+            }
+
+            <form method="post" asp-page-handler="Create" class="login-form">
+                @Html.AntiForgeryToken()
+
+                <div class="form-group-login">
+                    <label class="form-label-login" for="UserName">Username</label>
+                    <input id="UserName" class="form-input-login" name="UserName" value="@UserName" placeholder="Choose a username" required />
+                </div>
+
+                <div class="form-group-login">
+                    <label class="form-label-login" for="Email">Email</label>
+                    <input id="Email" type="email" class="form-input-login" name="Email" value="@Email" placeholder="you@example.com" required />
+                </div>
+
+                <div class="form-group-login">
+                    <label class="form-label-login" for="Password">Password</label>
+                    <input id="Password" type="password" class="form-input-login" name="Password" placeholder="Create a password" required />
+                </div>
+
+                <button type="submit" class="btn-login">Create account</button>
+            </form>
+
+            <p class="login-switch">Already have an account? <a href="/Account/ParameterizedLogin">Sign in</a></p>
+        </div>
+    </div>
+</div>

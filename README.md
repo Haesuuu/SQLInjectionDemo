@@ -11,7 +11,7 @@ Do not deploy this application to a public server. It uses demonstration-only pl
 ## Requirements
 
 - .NET 10 SDK
-- SQL Server LocalDB, SQL Server Express, or another SQL Server instance
+- SQL Server `SQL2025` instance, SQL Server Express, or another SQL Server instance
 - Visual Studio 2022 or the .NET CLI (optional)
 
 ## Run after cloning
@@ -25,19 +25,14 @@ dotnet run --project .\SQLInjectionDemo --launch-profile http
 
 Open `http://localhost:5187`.
 
-The application automatically applies migrations and creates two demo accounts on first run:
-
-| Account | Username | Password |
-| --- | --- | --- |
-| Administrator | `admin` | `admin123` |
-| Member | `member` | `member123` |
+The application automatically applies migrations on first run. Existing users, including Hesoo Noda and other records in the `SQLInjectionDemo` database, are used directly; the application does not create replacement demo accounts.
 
 ## SQL Server configuration
 
-The default connection uses Windows LocalDB:
+The default connection uses the existing SQL Server `SQL2025` instance:
 
 ```text
-Server=(localdb)\MSSQLLocalDB;Database=SQLInjectionDemo;Trusted_Connection=True;TrustServerCertificate=True;
+Server=.\SQL2025;Database=SQLInjectionDemo;Trusted_Connection=True;TrustServerCertificate=True;
 ```
 
 If LocalDB is not installed, configure another SQL Server instance with user secrets:
@@ -66,3 +61,5 @@ After signing in, open a member profile. Members can edit their own bio. To demo
 ```
 
 Then view the profile again. The bio is intentionally rendered as HTML for this demonstration; it must be HTML-encoded in any real application.
+
+New visitors can use **Create account** from either login page. New accounts are assigned to the existing member/user role in the database.

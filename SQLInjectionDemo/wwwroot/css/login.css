@@ -163,7 +163,7 @@
         box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35);
     }
 
-    .btn-login:active {
+.btn-login:active {
         transform: translateY(0);
     }
 
@@ -340,6 +340,23 @@
         flex-direction: column;
         gap: 12px;
     }
+
+.login-switch {
+    margin: 20px 0 0;
+    color: #718096;
+    font-size: 13px;
+    text-align: center;
+}
+
+.login-switch a {
+    color: #5369d8;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.login-switch a:hover {
+    text-decoration: underline;
+}
 
     .navbar-links {
         flex-direction: row;
