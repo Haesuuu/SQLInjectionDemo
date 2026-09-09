@@ -1,7 +1,48 @@
-﻿@page
+@page
+@using Microsoft.EntityFrameworkCore
+@using SQLInjectionDemo.Data
+@using SQLInjectionDemo.Models
+@inject AppDbContext _context
 @{
-    ViewData["Title"] = "User Dashboard";
+    ViewData["Title"] = "My Profile";
     Layout = null;
+}
+
+@functions {
+    public User? Member { get; set; }
+    public List<User> Members { get; set; } = new();
+
+    public IActionResult OnGet()
+    {
+        var userId = HttpContext.Session.GetInt32("DemoUserId");
+        if (!userId.HasValue)
+        {
+            return RedirectToPage("/Account/ParameterizedLogin");
+        }
+
+        Member = _context.Users
+            .AsNoTracking()
+            .FirstOrDefault(user => user.UserID == userId.Value);
+
+        if (Member is null)
+        {
+            HttpContext.Session.Remove("DemoUserId");
+            return RedirectToPage("/Account/ParameterizedLogin");
+        }
+
+        if (Member.RoleID == 1)
+        {
+            return RedirectToPage("/Admin/Admin");
+        }
+
+        Members = _context.Users
+            .AsNoTracking()
+            .Where(user => user.UserID != Member.UserID)
+            .OrderBy(user => user.UserName)
+            .ToList();
+
+        return Page();
+    }
 }
 
 <!DOCTYPE html>
@@ -9,238 +50,59 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>@ViewData["Title"]</title>
-
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #f5f5f5;
-            font-family: Arial, Helvetica, sans-serif;
-            color: #333;
-        }
-
-        .navbar {
-            background-color: #ffffff;
-            border-bottom: 1px solid #ddd;
-            padding: 18px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .site-name {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .logout {
-            text-decoration: none;
-            color: #555;
-            font-size: 14px;
-        }
-
-        .logout:hover {
-            color: #222;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 900px;
-            margin: 40px auto;
-        }
-
-        .card {
-            background-color: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 35px;
-        }
-
-        .welcome-header {
-            text-align: center;
-            margin-bottom: 35px;
-        }
-
-        .welcome-header h1 {
-            margin: 0;
-            font-size: 32px;
-            font-weight: 600;
-            color: #222;
-        }
-
-        .welcome-header p {
-            margin-top: 8px;
-            color: #666;
-            font-size: 15px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 20px;
-            margin-bottom: 25px;
-        }
-
-        .title {
-            margin: 0;
-            font-size: 26px;
-            font-weight: 600;
-        }
-
-        .role {
-            background-color: #e6e6e6;
-            color: #444;
-            padding: 7px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        .description {
-            color: #666;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .module {
-            border: 1px solid #ddd;
-            background-color: #fafafa;
-            border-radius: 6px;
-            padding: 20px;
-        }
-
-        .module:hover {
-            background-color: #f5f5f5;
-        }
-
-        .module-title {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .module-description {
-            margin: 0;
-            font-size: 14px;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        @@media (max-width: 700px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .navbar {
-                padding: 18px 20px;
-            }
-
-            .card {
-                padding: 25px;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-        }
-    </style>
+    <title>@ViewData["Title"] - JISSA</title>
+    <link rel="stylesheet" href="~/css/site.css" />
 </head>
-
-<body>
-
-    <nav class="navbar">
-        <div class="site-name">
-            JISSA
+<body class="dashboard-body">
+    <nav class="dashboard-nav">
+        <a class="dashboard-brand" href="/Home/User">JISSA <span>SQL Demo</span></a>
+        <div class="dashboard-nav-links">
+            <span class="nav-status">User view</span>
+            <a href="/Account/ParameterizedLogin">Log out</a>
         </div>
-
-        <a href="/Account/Login" class="logout">
-            Logout
-        </a>
     </nav>
 
-    <main class="container">
-
-        <section class="card">
-
-            <div class="welcome-header">
-                <h1>Welcome to JISSA</h1>
-                <p>User Dashboard</p>
+    <main class="dashboard-shell">
+        <section class="dashboard-hero">
+            <div>
+                <p class="eyebrow">Member area</p>
+                <h1>Your profile</h1>
+                <p>Only the member username and bio are shown in this demonstration profile.</p>
             </div>
-
-            <div class="header">
-                <h1 class="title">
-                    Welcome Back
-                </h1>
-
-                <span class="role">
-                    Standard User
-                </span>
-            </div>
-
-            <p class="description">
-                Here you can view your account information and manage
-                your available account options.
-            </p>
-
-            <div class="dashboard-grid">
-
-                <div class="module">
-                    <h3 class="module-title">
-                        My Profile
-                    </h3>
-
-                    <p class="module-description">
-                        View and update your personal account information.
-                    </p>
-                </div>
-
-                <div class="module">
-                    <h3 class="module-title">
-                        Change Password
-                    </h3>
-
-                    <p class="module-description">
-                        Update your account password and security information.
-                    </p>
-                </div>
-
-                <div class="module">
-                    <h3 class="module-title">
-                        My Documents
-                    </h3>
-
-                    <p class="module-description">
-                        View documents and files associated with your account.
-                    </p>
-                </div>
-
-                <div class="module">
-                    <h3 class="module-title">
-                        Notifications
-                    </h3>
-
-                    <p class="module-description">
-                        View recent messages and account notifications.
-                    </p>
-                </div>
-
-            </div>
-
+            <div class="hero-mark">01</div>
         </section>
 
-    </main>
+        <section class="profile-panel" aria-label="Your member profile">
+            @if (Member is not null)
+            {
+                <a class="profile-link" href="/Profile?userId=@Member.UserID" aria-label="View your profile">
+                    <partial name="_MemberProfileCard" model="Member" />
+                </a>
+            }
+        </section>
 
+        <section class="members-section" aria-labelledby="members-heading">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Community</p>
+                    <h2 id="members-heading">Browse members</h2>
+                </div>
+                <span class="member-count">@Members.Count members</span>
+            </div>
+
+            <div class="member-list">
+                @foreach (var member in Members)
+                {
+                    <a class="member-list-item" href="/Profile?userId=@member.UserID">
+                        <span class="member-list-avatar">@member.UserName.Substring(0, 1).ToUpperInvariant()</span>
+                        <span class="member-list-name">@member.UserName</span>
+                        <span class="member-list-arrow" aria-hidden="true">→</span>
+                    </a>
+                }
+            </div>
+        </section>
+
+        <p class="demo-footnote">Bios are intentionally rendered without encoding for the local XSS demonstration.</p>
+    </main>
 </body>
 </html>

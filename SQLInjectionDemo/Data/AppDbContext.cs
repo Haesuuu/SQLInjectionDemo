@@ -46,6 +46,9 @@ public class AppDbContext : DbContext
                 .HasMaxLength(255)
                 .IsRequired();
 
+            entity.Property(u => u.Bio)
+                .HasColumnType("nvarchar(max)");
+
             entity.HasOne(u => u.Role)
                 .WithMany(r => r.Users)
                 .HasForeignKey(u => u.RoleID)

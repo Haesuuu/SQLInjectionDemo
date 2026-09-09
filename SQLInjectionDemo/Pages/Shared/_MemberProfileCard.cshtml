@@ -1,0 +1,19 @@
+@model SQLInjectionDemo.Models.User
+@{
+    var displayName = string.IsNullOrWhiteSpace(Model.UserName) ? "?" : Model.UserName;
+}
+
+<article class="profile-card">
+    <div class="profile-avatar" aria-hidden="true">
+        @displayName.Substring(0, 1).ToUpperInvariant()
+    </div>
+
+    <div class="profile-content">
+        <p class="profile-label">Member profile</p>
+        <h2 class="profile-username">@displayName</h2>
+        <div class="profile-bio">
+            @* Intentionally unencoded for the local XSS demonstration. Do not copy to production. *@
+            @Html.Raw(string.IsNullOrWhiteSpace(Model.Bio) ? "No bio has been added yet." : Model.Bio)
+        </div>
+    </div>
+</article>

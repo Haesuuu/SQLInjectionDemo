@@ -1,7 +1,46 @@
-﻿@page
+@page
+@using Microsoft.EntityFrameworkCore
+@using SQLInjectionDemo.Data
+@using SQLInjectionDemo.Models
+@inject AppDbContext _context
 @{
-    ViewData["Title"] = "Admin Dashboard";
+    ViewData["Title"] = "Member Profiles";
     Layout = null;
+}
+
+@functions {
+    public List<User> Members { get; set; } = new();
+
+    public IActionResult OnGet()
+    {
+        var userId = HttpContext.Session.GetInt32("DemoUserId");
+        if (!userId.HasValue)
+        {
+            return RedirectToPage("/Account/ParameterizedLogin");
+        }
+
+        var currentUser = _context.Users
+            .AsNoTracking()
+            .FirstOrDefault(user => user.UserID == userId.Value);
+
+        if (currentUser is null)
+        {
+            HttpContext.Session.Remove("DemoUserId");
+            return RedirectToPage("/Account/ParameterizedLogin");
+        }
+
+        if (currentUser.RoleID != 1)
+        {
+            return RedirectToPage("/Home/User");
+        }
+
+        Members = _context.Users
+            .AsNoTracking()
+            .OrderBy(user => user.UserName)
+            .ToList();
+
+        return Page();
+    }
 }
 
 <!DOCTYPE html>
@@ -9,252 +48,38 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>@ViewData["Title"]</title>
-
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #f5f5f5;
-            font-family: Arial, Helvetica, sans-serif;
-            color: #333;
-        }
-
-        .navbar {
-            background-color: #ffffff;
-            border-bottom: 1px solid #ddd;
-            padding: 18px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .site-name {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .logout {
-            text-decoration: none;
-            color: #555;
-            font-size: 14px;
-        }
-
-        .logout:hover {
-            color: #222;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 900px;
-            margin: 40px auto;
-        }
-
-        .card {
-            background-color: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 35px;
-        }
-
-        .welcome-header {
-            text-align: center;
-            margin-bottom: 35px;
-        }
-
-        .welcome-header h1 {
-            margin: 0;
-            font-size: 32px;
-            font-weight: 600;
-            color: #222;
-        }
-
-        .welcome-header p {
-            margin-top: 8px;
-            color: #666;
-            font-size: 15px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 20px;
-            margin-bottom: 25px;
-        }
-
-        .title {
-            margin: 0;
-            font-size: 26px;
-            font-weight: 600;
-        }
-
-        .role {
-            background-color: #444;
-            color: #ffffff;
-            padding: 7px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        .message {
-            background-color: #f2f2f2;
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin-bottom: 25px;
-            border-radius: 5px;
-            color: #444;
-            font-size: 14px;
-        }
-
-        .description {
-            color: #666;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .module {
-            border: 1px solid #ddd;
-            background-color: #fafafa;
-            border-radius: 6px;
-            padding: 20px;
-        }
-
-        .module:hover {
-            background-color: #f5f5f5;
-        }
-
-        .module-title {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .module-description {
-            margin: 0;
-            font-size: 14px;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        @@media (max-width: 700px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .navbar {
-                padding: 18px 20px;
-            }
-
-            .card {
-                padding: 25px;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-        }
-    </style>
+    <title>@ViewData["Title"] - JISSA</title>
+    <link rel="stylesheet" href="~/css/site.css" />
 </head>
-
-<body>
-
-    <nav class="navbar">
-        <div class="site-name">
-            JISSA
+<body class="dashboard-body">
+    <nav class="dashboard-nav">
+        <a class="dashboard-brand" href="/Admin/Admin">JISSA <span>SQL Demo</span></a>
+        <div class="dashboard-nav-links">
+            <span class="nav-status">Admin view</span>
+            <a href="/Account/ParameterizedLogin">Log out</a>
         </div>
-
-        <a href="/Account/Login" class="logout">
-            Logout
-        </a>
     </nav>
 
-    <main class="container">
-
-        <section class="card">
-
-            <div class="welcome-header">
-                <h1>JISSA ADMIN</h1>
-                <p>Administrator Dashboard</p>
+    <main class="dashboard-shell">
+        <section class="dashboard-hero">
+            <div>
+                <p class="eyebrow">Administrator area</p>
+                <h1>Member profiles</h1>
+                <p>Review the username and bio for every member in the demonstration database.</p>
             </div>
-
-            <div class="message">
-                You are logged in as an administrator.
-            </div>
-
-            <div class="header">
-                <h1 class="title">
-                    Admin Dashboard
-                </h1>
-
-                <span class="role">
-                    Administrator
-                </span>
-            </div>
-
-            <p class="description">
-                This dashboard provides access to basic system management
-                and administrative information.
-            </p>
-
-            <div class="dashboard-grid">
-
-                <div class="module">
-                    <h3 class="module-title">
-                        Manage Users
-                    </h3>
-
-                    <p class="module-description">
-                        View and manage registered user accounts.
-                    </p>
-                </div>
-
-                <div class="module">
-                    <h3 class="module-title">
-                        Security Logs
-                    </h3>
-
-                    <p class="module-description">
-                        View recent account and system activity.
-                    </p>
-                </div>
-
-                <div class="module">
-                    <h3 class="module-title">
-                        System Settings
-                    </h3>
-
-                    <p class="module-description">
-                        Review basic system configuration settings.
-                    </p>
-                </div>
-
-                <div class="module">
-                    <h3 class="module-title">
-                        Reports
-                    </h3>
-
-                    <p class="module-description">
-                        View available system and user reports.
-                    </p>
-                </div>
-
-            </div>
-
+            <div class="hero-mark">@Members.Count.ToString("00")</div>
         </section>
 
-    </main>
+        <section class="profile-grid" aria-label="All member profiles">
+            @foreach (var member in Members)
+            {
+                <a class="profile-link" href="/Profile?userId=@member.UserID" aria-label="View @member.UserName profile">
+                    <partial name="_MemberProfileCard" model="member" />
+                </a>
+            }
+        </section>
 
+        <p class="demo-footnote">The bio is intentionally rendered without encoding for the local XSS demonstration.</p>
+    </main>
 </body>
 </html>

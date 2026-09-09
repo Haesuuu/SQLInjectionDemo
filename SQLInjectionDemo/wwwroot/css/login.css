@@ -266,3 +266,85 @@
     color: #d1d5db;
 }
 
+/* Demo navigation and mode callouts */
+.demo-navbar {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px clamp(20px, 5vw, 64px);
+    background: rgba(255, 255, 255, .9);
+    border-bottom: 1px solid #e8eaf4;
+}
+
+.demo-navbar .navbar-brand {
+    color: #1b2559;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    text-decoration: none;
+}
+
+.demo-navbar .navbar-brand span {
+    color: #7781a8;
+    font-weight: 500;
+}
+
+.navbar-links {
+    display: flex;
+    gap: 22px;
+}
+
+.navbar-links a {
+    color: #6c7693;
+    font-size: 13px;
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.navbar-links a:hover,
+.navbar-links a.active {
+    color: #5369d8;
+}
+
+.demo-callout {
+    display: grid;
+    gap: 3px;
+    margin: 0 0 24px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.demo-callout strong {
+    font-size: 12px;
+}
+
+.vulnerable-callout {
+    color: #8a4b23;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+}
+
+.safe-callout {
+    color: #276749;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+@media (max-width: 700px) {
+    .demo-navbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .navbar-links {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+    }
+}
+

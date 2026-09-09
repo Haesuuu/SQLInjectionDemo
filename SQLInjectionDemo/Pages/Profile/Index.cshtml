@@ -1,0 +1,128 @@
+@page
+@using Microsoft.EntityFrameworkCore
+@using SQLInjectionDemo.Data
+@using SQLInjectionDemo.Models
+@inject AppDbContext _context
+@{
+    ViewData["Title"] = "Member Profile";
+    Layout = null;
+}
+
+@functions {
+    [Microsoft.AspNetCore.Mvc.BindProperty(SupportsGet = true)]
+    public int UserId { get; set; }
+
+    [Microsoft.AspNetCore.Mvc.BindProperty]
+    public string Bio { get; set; } = string.Empty;
+
+    public User? Member { get; set; }
+    public bool CanEdit { get; set; }
+
+    public IActionResult OnGet()
+    {
+        var viewerId = HttpContext.Session.GetInt32("DemoUserId");
+        if (!viewerId.HasValue)
+        {
+            return RedirectToPage("/Account/ParameterizedLogin");
+        }
+
+        Member = _context.Users
+            .AsNoTracking()
+            .FirstOrDefault(user => user.UserID == UserId);
+
+        if (Member is null)
+        {
+            return NotFound();
+        }
+
+        CanEdit = Member.UserID == viewerId.Value;
+        Bio = Member.Bio ?? string.Empty;
+        return Page();
+    }
+
+    public IActionResult OnPostSaveBio()
+    {
+        var viewerId = HttpContext.Session.GetInt32("DemoUserId");
+        if (!viewerId.HasValue)
+        {
+            return RedirectToPage("/Account/ParameterizedLogin");
+        }
+
+        var member = _context.Users.FirstOrDefault(user => user.UserID == viewerId.Value);
+        if (member is null)
+        {
+            HttpContext.Session.Remove("DemoUserId");
+            return RedirectToPage("/Account/ParameterizedLogin");
+        }
+
+        // Intentionally store the bio as entered so the profile display can demonstrate XSS locally.
+        member.Bio = Bio ?? string.Empty;
+        _context.SaveChanges();
+
+        return RedirectToPage(new { userId = member.UserID });
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - JISSA</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body class="dashboard-body">
+    <nav class="dashboard-nav">
+        <a class="dashboard-brand" href="/Home/User">JISSA <span>SQL Demo</span></a>
+        <div class="dashboard-nav-links">
+            <a href="/Home/User">Members</a>
+            <a href="/Account/ParameterizedLogin">Log out</a>
+        </div>
+    </nav>
+
+    <main class="dashboard-shell profile-page-shell">
+        <a class="back-link" href="/Home/User">← Back to members</a>
+
+        @if (Member is not null)
+        {
+            <section class="profile-page-header">
+                <p class="eyebrow">Member profile</p>
+                <h1>@Member.UserName</h1>
+                <p>Username and bio are the only member details shown here.</p>
+            </section>
+
+            <section class="profile-page-card" aria-label="Member username and bio">
+                <div class="profile-page-avatar">@Member.UserName.Substring(0, 1).ToUpperInvariant()</div>
+                <div class="profile-page-content">
+                    <p class="profile-label">Username</p>
+                    <h2>@Member.UserName</h2>
+                    <p class="profile-label bio-label">Bio</p>
+                    <div class="profile-bio profile-page-bio">
+                        @* Deliberately unencoded for the local XSS demonstration. *@
+                        @Html.Raw(string.IsNullOrWhiteSpace(Member.Bio) ? "No bio has been added yet." : Member.Bio)
+                    </div>
+                </div>
+            </section>
+
+            @if (CanEdit)
+            {
+                <section class="bio-editor" aria-labelledby="bio-editor-heading">
+                    <div>
+                        <p class="eyebrow">Your profile</p>
+                        <h2 id="bio-editor-heading">Edit your bio</h2>
+                        <p>Enter a bio or HTML payload for the local XSS exercise.</p>
+                    </div>
+                    <form method="post" asp-page-handler="SaveBio" class="bio-form">
+                        @Html.AntiForgeryToken()
+                        <label for="Bio">Bio / comment</label>
+                        <textarea id="Bio" name="Bio" rows="5" placeholder="Write a short bio or demonstration comment...">@Bio</textarea>
+                        <button type="submit" class="btn-save-bio">Save bio</button>
+                    </form>
+                </section>
+            }
+        }
+
+        <p class="demo-footnote">This profile intentionally renders the saved bio without HTML encoding for local testing only.</p>
+    </main>
+</body>
+</html>

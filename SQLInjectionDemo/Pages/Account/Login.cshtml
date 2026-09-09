@@ -8,53 +8,6 @@
     Layout = "~/Pages/Shared/_LoginLayout.cshtml";
 }
 
-<style>
-    .demo-navbar {
-        background-color: #ffffff;
-        border-bottom: 1px solid #dddddd;
-        padding: 16px 40px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-family: Arial, Helvetica, sans-serif;
-    }
-
-    .navbar-brand {
-        font-size: 19px;
-        font-weight: bold;
-        color: #333333;
-    }
-
-    .navbar-links {
-        display: flex;
-        gap: 25px;
-    }
-
-        .navbar-links a {
-            text-decoration: none;
-            color: #555555;
-            font-size: 14px;
-        }
-
-            .navbar-links a:hover {
-                color: #222222;
-            }
-
-    @@media (max-width: 700px) {
-        .demo-navbar {
-            padding: 15px 20px;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 15px;
-        }
-
-        .navbar-links {
-            flex-direction: column;
-            gap: 10px;
-        }
-    }
-</style>
-
 @functions {
     [Microsoft.AspNetCore.Mvc.BindProperty]
     public string UserName { get; set; } = string.Empty;
@@ -63,6 +16,11 @@
     public string Password { get; set; } = string.Empty;
 
     public string GeneratedSql { get; set; } = string.Empty;
+
+    public void OnGet()
+    {
+        HttpContext.Session.Remove("DemoUserId");
+    }
 
     public IActionResult OnPostLogin()
     {
@@ -95,12 +53,21 @@
                 return Page();
             }
 
-            if (user.RoleID == 1)
+            // Demo-only identity state. This is not intended to replace real authentication.
+            HttpContext.Session.SetInt32("DemoUserId", user.UserID);
+
+            var roleName = _context.Roles
+                .AsNoTracking()
+                .Where(role => role.RoleID == user.RoleID)
+                .Select(role => role.RoleName)
+                .FirstOrDefault();
+
+            if (roleName == "Administrator" || user.RoleID == 1)
             {
                 return RedirectToPage("/Admin/Admin");
             }
 
-            if (user.RoleID == 2)
+            if (roleName == "Member" || user.RoleID == 2)
             {
                 return RedirectToPage("/Home/User");
             }
@@ -122,15 +89,11 @@
     }
 }
 <nav class="demo-navbar">
-    <div class="navbar-brand">
-        JISSA SQL Demo
-    </div>
-
+    <a class="navbar-brand" href="/Account/Login">JISSA <span>SQL Demo</span></a>
     <div class="navbar-links">
-        <a href="/Account/Login">Unparameterized Login</a>
-        <a href="/Account/ParameterizedLogin">Parameterized Login</a>
+        <a class="active" href="/Account/Login">Vulnerable login</a>
+        <a href="/Account/ParameterizedLogin">Safe login</a>
     </div>
-
 </nav>
 <div class="login-container">
 
@@ -147,7 +110,12 @@
             </div>
 
             <h2 class="login-title">Welcome</h2>
-            <p class="login-subtitle">Bypass This Login form</p>
+            <p class="login-subtitle">Explore an intentionally vulnerable SQL query</p>
+
+            <div class="demo-callout vulnerable-callout">
+                <strong>Local demonstration mode</strong>
+                <span>This page uses string-built SQL so injection behavior can be observed.</span>
+            </div>
 
             @if (!ModelState.IsValid && ModelState.ErrorCount > 0)
             {
